@@ -5,18 +5,19 @@ from PIL import Image, ImageTk
 from Helpers import Cleaner, font_verdana, dialog_modal, lister
 from Filepaths import *
 from tkinter import (Tk, Menu, TOP, BOTH, StringVar, IntVar, LEFT, Label, Entry, Button, END, Listbox, RIGHT, CENTER,
-                     W as WEST, N as NORTH, BOTTOM, X as FILLX, DISABLED, ACTIVE)
+                     W as WEST, N as NORTH, BOTTOM, X as FILLX, DISABLED, ACTIVE, MULTIPLE)
 from tkinter.ttk import Frame, Combobox, Notebook, Style, Progressbar
-from RePartySettingsModal import RePartySettingsModal
-from RePartyAnalysisDashboard import RePartyAnalysisDashboard
+from SettingsModal import SettingsModal
+from QueryResultsDashboard import QueryResultsDashboard
 from GameVars import game_result_list, venue_list, mission_list
 from ReplayParser import ReplayParser
+from os import listdir
 
-ROLE_EITHER = 'either'
+ROLE_EITHER = 'both'
 ROLE_SNIPER = 'sniper'
 ROLE_SPY = 'spy'
 
-MWC_EITHER = 'Maybe'
+MWC_EITHER = 'Either'
 # might be desirable
 # MWC_EXTRA = 'Overcompleted'
 MWC_YES = 'Yes'
@@ -40,7 +41,7 @@ class RePartyApplication(Tk):
         toolbar = Menu(self)
         self.config(menu=toolbar)
         menu_file = Menu(toolbar, tearoff=0)
-        menu_file.add_command(label="Settings", command=lambda: RePartySettingsModal().mainloop())
+        menu_file.add_command(label="Settings", command=lambda: SettingsModal().mainloop())
         menu_file.add_separator()
         menu_file.add_command(label="Exit", command=self.on_window_close)
         toolbar.add_cascade(label="Menu", menu=menu_file)
@@ -55,10 +56,14 @@ class RePartyApplication(Tk):
         self.displayed_venues = list(filter(lambda ven: ven.selected, venue_list))
 
         (players_frame := Frame(self)).pack()
-        # Label(players_frame, text="Players:", width=7).pack(side=LEFT)
-        Entry(players_frame, textvariable=self.player_left, width=35).pack(side=LEFT)
+        Label(players_frame, text="Players:", width=7).pack(side=LEFT)
+        player_entry = Entry(players_frame, textvariable=self.player_left, width=35)
+        player_entry.bind('<Return>', lambda event: print('SEARCH ON ENTER PRESS'))
+        player_entry.pack(side=LEFT)
         Button(players_frame, text="vs", command=self.swap_players, width=2).pack(side=LEFT, padx=6)
-        Entry(players_frame, textvariable=self.player_right, width=35).pack(side=LEFT)
+        player_entry = Entry(players_frame, textvariable=self.player_right, width=35)
+        player_entry.bind('<Return>', lambda event: print('SEARCH ON ENTER PRESS'))
+        player_entry.pack(side=LEFT)
         Label(players_frame, text="as", width=2).pack(side=LEFT)
         (combo_role := Combobox(players_frame, values=[ROLE_EITHER, ROLE_SNIPER, ROLE_SPY], width=6)).pack(side=LEFT)
         combo_role.set(ROLE_EITHER)
@@ -114,43 +119,41 @@ class RePartyApplication(Tk):
 
         Label(settings_frame, text='Missions Completed').grid(row=1, column=1, sticky=WEST, padx=6)
         (lb := Listbox(settings_frame, selectmode="multiple", exportselection=False, width=25, height=8)
-         ).grid(row=2, rowspan=4, column=1, sticky=WEST, padx=6)
+         ).grid(row=2, rowspan=8, column=1, sticky=WEST + NORTH, padx=6)
         populate_listbox(lb, mission_list)
         self.listbox_missions = lb
 
         Label(settings_frame, text='Game Results').grid(row=1, column=3, columnspan=2, sticky=WEST, padx=6)
         (lb := Listbox(settings_frame, selectmode="multiple", exportselection=False, width=25, height=4)
-         ).grid(row=2, rowspan=2, column=3, columnspan=2, sticky=WEST + NORTH, padx=6)
+         ).grid(row=2, rowspan=4, column=3, columnspan=2, sticky=WEST + NORTH, padx=6)
         populate_listbox(lb, game_result_list)
         self.listbox_results = lb
 
-        Label(settings_frame, text='Reaches MWC?').grid(row=4, column=3, sticky=WEST, padx=6)
+        Label(settings_frame, text='Reaches MWC?').grid(row=6, column=3, sticky=WEST, padx=6)
         (combo_mwc := Combobox(settings_frame, values=[MWC_EITHER, MWC_YES, MWC_NO], width=6)
-         ).grid(row=4, column=4, sticky=WEST, padx=6)
+         ).grid(row=6, column=4, sticky=WEST, padx=6)
         combo_mwc.set(MWC_EITHER)
         self.combo_mwc = combo_mwc
 
-        # Checkbutton(settings_frame, text='Reaches MWC?', variable=self.reaches_mwc
-        #             ).grid(row=3, column=2, sticky=WEST, padx=6)
+        subdirectories = listdir(REPLAYS_DIRECTORY())
+        # todo if len(subdirs) > 8, add scrollbar
+        Label(settings_frame, text='Replay Directories').grid(row=1, column=5, sticky=WEST, padx=6)
+        (lb := Listbox(settings_frame, selectmode=MULTIPLE, exportselection=False, width=25, height=8)
+         ).grid(row=2, rowspan=8, column=5, columnspan=2, sticky=WEST + NORTH, padx=6)
+        populate_listbox(lb, subdirectories)
+        for default_dir in ('Matches', 'Spectations'):
+            lb.selection_set(subdirectories.index(default_dir))  # luckily, this cooperates with multi-select
+        self.listbox_directories = lb
 
         self.progress_bar_style = Style(self)
         self.progress_bar_style.layout(
-            "LabeledProgressbar", [(
-                'LabeledProgressbar.trough', {
-                    'children': [(
-                        'LabeledProgressbar.pbar', {
-                            'side': 'left',
-                            'sticky': 'ns'
-                        }), (
-                        "LabeledProgressbar.label", {
-                            "sticky": "e"
-                        })
-                    ],
-                    'sticky': 'nswe'
-                })
-            ]
+            "LabeledProgressbar", [
+                ('LabeledProgressbar.trough', {'children': [
+                    ('LabeledProgressbar.pbar', {'side': 'left', 'sticky': 'ns'}),
+                    ("LabeledProgressbar.label", {"sticky": "e"})
+                ], 'sticky': 'nswe'})]
         )
-        self.progress_bar_style.configure('LabeledProgressbar', bg='green')
+        # self.progress_bar_style.configure('LabeledProgressbar', bg='green')  # todo figure out bar color
         (loading_bar := Progressbar(self, variable=self.progress, maximum=1, style='LabeledProgressbar')).pack(
             side=BOTTOM, fill=FILLX)
         self.loading_bar = loading_bar
@@ -235,6 +238,12 @@ class RePartyApplication(Tk):
             dialog_modal("No venues selected.", "Please select at least one venue and try again.")
             return
 
+        if not (directories_wanted := [
+            self.listbox_directories.get(i) for i in self.listbox_directories.curselection()
+        ]):
+            dialog_modal("No directories selected.", "Please select at least one directory to search and try again.")
+            return
+
         # if missions_wanted:
         #     criteria.append(lambda rep: len(missions_wanted - rep["completed_missions"]) == 0)
         if results_wanted := {game_result_list[i] for i in self.listbox_results.curselection()}:
@@ -247,9 +256,10 @@ class RePartyApplication(Tk):
             criteria.append(lambda replay: len(replay.completed_missions) < int(replay.setup[1]))
 
         print(len(criteria), 'criteria applied')
-        self.begin_query(criteria)
+        self.begin_query(criteria, directories_wanted)
 
-    def begin_query(self, criteria):
+    def begin_query(self, criteria, directories):
+        # todo with my improved threading knowledge, turn the disabled submit button into a cancel button!
         if self.query_in_progress:
             return
         self.query_in_progress = True
@@ -257,12 +267,11 @@ class RePartyApplication(Tk):
 
         replays = []
         hummus = ReplayParser()
-        scan_dirs = list(get_scan_directories())
-        for subdir in scan_dirs:
+        for subdir in directories:
             # This part is relatively fast, so it is done first to set up the progress bar.
             replays.extend(hummus.find_replays(subdir))
         if not (count := len(replays)):
-            dialog_modal("!", f"No replays were found in your {lister(scan_dirs)} folder(s).")
+            dialog_modal("!", f"No replays were found in your {lister(directories)} folder(s).")
             return
 
         using_progress_bar = REPARTY_CONFIG[KEYWORD_PROGRESS_BAR]
@@ -313,10 +322,14 @@ class RePartyApplication(Tk):
                 results = q.get_nowait()
                 self.submission.configure(state=ACTIVE)
                 self.query_in_progress = False
-                RePartyAnalysisDashboard(results).mainloop()
-                self.set_status('')
+                if results:
+                    self.set_status(f'{len(results)} Replays Found')
+                    QueryResultsDashboard(results).mainloop()
+                else:
+                    self.set_status('No Replays Found')
             except Empty:  # the Queue has not had results inserted yet, wait longer
                 self.after(1000, __thread_finished_check)
+
         self.after(1500, __thread_finished_check)
 
 

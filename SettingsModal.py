@@ -2,7 +2,7 @@ from tkinter import Tk, StringVar, BooleanVar, filedialog, Label, Entry, Button,
 from Filepaths import REPARTY_CONFIG, KEYWORD_GAME_DIR, KEYWORD_PROGRESS_BAR
 
 
-class RePartySettingsModal(Tk):
+class SettingsModal(Tk):
     def __init__(self):
         Tk.__init__(self)
         self.title('ReParty: Settings')
@@ -30,6 +30,7 @@ class RePartySettingsModal(Tk):
         if (path := filedialog.askdirectory(
                 initialdir=REPARTY_CONFIG[KEYWORD_GAME_DIR],
                 title="Select your SpyParty directory")):
+            # todo make sure a SpyParty.prop is in this directory, simple validation
             self.sp_dir.set(path)
             self.tkraise()
 
@@ -41,4 +42,4 @@ class RePartySettingsModal(Tk):
 
 
 if __name__ == '__main__':
-    RePartySettingsModal().mainloop()
+    SettingsModal().mainloop()

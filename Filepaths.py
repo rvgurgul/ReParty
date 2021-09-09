@@ -9,16 +9,17 @@ VENUE_IMAGES = ASSETS / 'venues'
 ROLE_IMAGES = ASSETS / 'roles'
 
 KEYWORD_GAME_DIR = 'SpyParty_directory'
-KEYWORD_SCAN_DIRS = 'replay_directories_to_scan'
 KEYWORD_PROGRESS_BAR = 'show_progress_bar'
 KEYWORD_QUERIED_SETS_DIR = 'queried_sets_folder'
+KEYWORD_QUERIED_SETS_DATA = 'queried_sets_data'
 
-__REPARTY_CONFIG_FILE = 'ReParty_config.json'
+# CWD / allows access to the config from project subdirectories
+__REPARTY_CONFIG_FILE = CWD / 'ReParty_config.json'
 REPARTY_CONFIG = Config(__REPARTY_CONFIG_FILE, default_config=lambda: {
     KEYWORD_GAME_DIR: rf'{Path.home()}\AppData\Local\SpyParty',
-    KEYWORD_SCAN_DIRS: ['Matches', 'Spectations'],
     KEYWORD_PROGRESS_BAR: 1,
-    KEYWORD_QUERIED_SETS_DIR: 'ReParty Queried Sets'
+    KEYWORD_QUERIED_SETS_DIR: 'ReParty Queried Sets',
+    # KEYWORD_QUERIED_SETS_DATA: {}
 }, load_logging=True)
 
 
@@ -32,12 +33,6 @@ def QUICKPLAYS_DIRECTORY():
 
 def REPLAYS_DIRECTORY():
     return SPYPARTY_DIRECTORY() / 'replays'
-
-
-def get_scan_directories():
-    repl_dir = REPLAYS_DIRECTORY()
-    for subdir in REPARTY_CONFIG[KEYWORD_SCAN_DIRS]:
-        yield repl_dir / subdir
 
 
 def get_queried_sets_directory():

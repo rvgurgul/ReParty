@@ -6,6 +6,9 @@ class Venue:
         self.name = name
         self.selected = True
 
+    def __str__(self):
+        return self.name
+
     def get_image_path(self):
         return VENUE_IMAGES / f"{self.name.lower().replace(' ', '_')}.png"
 
