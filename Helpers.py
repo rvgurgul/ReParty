@@ -31,6 +31,12 @@ def lister(items):
         ', '.join(items[:-1]) + ' & ' + str(items[-1])
     )
 
+
+def windows_filename_sanitizer(entered_string, to_char='_'):
+    for char in '\\/:*?"<>|':  # one stackoverflow post claimed chained .replace() calls is the fastest approach
+        entered_string = entered_string.replace(char, to_char)
+    return entered_string
+
     # class GameType:
     #     class InvalidGameTypeException(Exception):
     #         pass

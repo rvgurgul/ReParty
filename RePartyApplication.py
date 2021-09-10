@@ -5,7 +5,7 @@ from PIL import Image, ImageTk
 from Helpers import Cleaner, font_verdana, dialog_modal, lister
 from Filepaths import *
 from tkinter import (Tk, Menu, TOP, BOTH, StringVar, IntVar, LEFT, Label, Entry, Button, END, Listbox, RIGHT, CENTER,
-                     W as WEST, N as NORTH, BOTTOM, X as FILLX, DISABLED, ACTIVE, MULTIPLE)
+                     W as WEST, N as NORTH, BOTTOM, X as FILLX, DISABLED, MULTIPLE, NORMAL)
 from tkinter.ttk import Frame, Combobox, Notebook, Style, Progressbar
 from SettingsModal import SettingsModal
 from QueryResultsDashboard import QueryResultsDashboard
@@ -58,11 +58,11 @@ class RePartyApplication(Tk):
         (players_frame := Frame(self)).pack()
         Label(players_frame, text="Players:", width=7).pack(side=LEFT)
         player_entry = Entry(players_frame, textvariable=self.player_left, width=35)
-        player_entry.bind('<Return>', lambda event: print('SEARCH ON ENTER PRESS'))
+        player_entry.bind('<Return>', lambda event: self.submit_query())
         player_entry.pack(side=LEFT)
         Button(players_frame, text="vs", command=self.swap_players, width=2).pack(side=LEFT, padx=6)
         player_entry = Entry(players_frame, textvariable=self.player_right, width=35)
-        player_entry.bind('<Return>', lambda event: print('SEARCH ON ENTER PRESS'))
+        player_entry.bind('<Return>', lambda event: self.submit_query())
         player_entry.pack(side=LEFT)
         Label(players_frame, text="as", width=2).pack(side=LEFT)
         (combo_role := Combobox(players_frame, values=[ROLE_EITHER, ROLE_SNIPER, ROLE_SPY], width=6)).pack(side=LEFT)
@@ -263,15 +263,17 @@ class RePartyApplication(Tk):
         if self.query_in_progress:
             return
         self.query_in_progress = True
-        self.submission.configure(state=DISABLED)  # prevent another load until the previous one has finished
+        self.submission['state'] = DISABLED  # prevent another load until the previous one has finished
 
         replays = []
         hummus = ReplayParser()
+        replay_dir = REPLAYS_DIRECTORY()
         for subdir in directories:
             # This part is relatively fast, so it is done first to set up the progress bar.
-            replays.extend(hummus.find_replays(subdir))
+            replays.extend(hummus.find_replays(replay_dir / subdir))
         if not (count := len(replays)):
-            dialog_modal("!", f"No replays were found in your {lister(directories)} folder(s).")
+            dialog_modal("Alert!", f"No replays were found in your {lister(directories)} folder(s).")
+            self.submission['state'] = NORMAL
             return
 
         using_progress_bar = REPARTY_CONFIG[KEYWORD_PROGRESS_BAR]
@@ -310,17 +312,18 @@ class RePartyApplication(Tk):
                         parsed = hummus.parse(replay)
                         if all(crit(parsed) for crit in criteria):
                             results.append(parsed)
-                    except ReplayParser.ReplayParseException as e:
-                        pass
+                    except ReplayParser.ReplayParseException as er:
+                        print(er)
                 output.put(results)
 
         q = Queue()
         Thread(target=lambda: __threaded_parsing(q), daemon=True).start()  # Damon finally does something useful!
+        # todo this doesn't have to be daemon?
 
         def __thread_finished_check():
             try:
                 results = q.get_nowait()
-                self.submission.configure(state=ACTIVE)
+                self.submission['state'] = NORMAL
                 self.query_in_progress = False
                 if results:
                     self.set_status(f'{len(results)} Replays Found')

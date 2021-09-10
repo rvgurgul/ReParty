@@ -3,8 +3,8 @@ from tkinter import Tk, Label, Button, Frame, ttk, Canvas, Menu
 # from Filepaths import ROLE_IMAGES
 # from PIL import Image, ImageTk
 
-from RePartyQueriedSetsManager import RePartyQueriedSetsManager
-from RePartySettingsModal import RePartySettingsModal
+from QueriedSetsManager import QueriedSetModal
+from SettingsModal import SettingsModal
 
 
 class WinRecord:
@@ -29,19 +29,20 @@ class WinRecord:
         return f'{round(100 * self.num / self.den, 1)}%' if self.den else 'UNDEFINED'
 
 
-class RePartyAnalysisDashboard(Tk):
+class QueryResultsDashboard(Tk):
     def __init__(self, replays):
         Tk.__init__(self)
         self.title('ReParty: Analysis Dashboard')
         self.replays = replays
         # could TECHNICALLY filter these replays further and open another AnalysisDashboard!
+        # todo for david (big fan): create window in more friendly positions
 
         toolbar = Menu(self)
         self.config(menu=toolbar)
         menu_file = Menu(toolbar, tearoff=0)
-        # menu_file.add_command(label="Create Replay Set",
-        #                       command=lambda: RePartyQueriedSetsManager(self.replays).mainloop())
-        menu_file.add_command(label="Settings", command=lambda: RePartySettingsModal().mainloop())
+        # todo prevent opening more than 1 modal at a time
+        menu_file.add_command(label="Export to Replay Set", command=lambda: QueriedSetModal(self.replays).mainloop())
+        menu_file.add_command(label="Settings", command=lambda: SettingsModal().mainloop())
         menu_file.add_separator()
         menu_file.add_command(label="Exit", command=self.destroy)
         toolbar.add_cascade(label="Menu", menu=menu_file)
