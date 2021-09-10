@@ -1,4 +1,4 @@
-from tkinter import Tk, Label, Entry, StringVar, Button, DISABLED, NORMAL, Checkbutton, IntVar
+from tkinter import Tk, Label, Entry, Button, Checkbutton, IntVar
 from Filepaths import get_queried_sets_directory
 from shutil import copy
 from Helpers import windows_filename_sanitizer

@@ -4,9 +4,10 @@ from time import time
 from PIL import Image, ImageTk
 from Helpers import Cleaner, font_verdana, dialog_modal, lister
 from Filepaths import *
-from tkinter import (Tk, Menu, TOP, BOTH, StringVar, IntVar, LEFT, Label, Entry, Button, END, Listbox, RIGHT, CENTER,
-                     W as WEST, N as NORTH, BOTTOM, X as FILLX, DISABLED, MULTIPLE, NORMAL)
-from tkinter.ttk import Frame, Combobox, Notebook, Style, Progressbar
+from tkinter import Tk, Menu, Entry, Label, Button, Listbox, Frame, StringVar, IntVar
+# importing common UI elements and tk for CONSTANTS
+import tkinter as tk
+import tkinter.ttk as ttk
 from SettingsModal import SettingsModal
 from QueryResultsDashboard import QueryResultsDashboard
 from GameVars import game_result_list, venue_list, mission_list
@@ -24,10 +25,8 @@ MWC_YES = 'Yes'
 MWC_NO = 'No'
 
 
-class RePartyApplication(Tk):
-    VENUE_DISPLAY_WIDTH = 6
-
-    def __init__(self):
+class ReParty(Tk):
+    def __init__(self, VENUE_DISPLAY_WIDTH=6):
         Tk.__init__(self)
         self.title('ReParty')
         self.minsize(width=640, height=480)
@@ -46,7 +45,7 @@ class RePartyApplication(Tk):
         menu_file.add_command(label="Exit", command=self.on_window_close)
         toolbar.add_cascade(label="Menu", menu=menu_file)
 
-        (container := Frame(self)).pack(side=TOP, fill=BOTH, expand=True)
+        (container := Frame(self)).pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
@@ -56,24 +55,24 @@ class RePartyApplication(Tk):
         self.displayed_venues = list(filter(lambda ven: ven.selected, venue_list))
 
         (players_frame := Frame(self)).pack()
-        Label(players_frame, text="Players:", width=7).pack(side=LEFT)
+        Label(players_frame, text="Players:", width=7).pack(side=tk.LEFT)
         player_entry = Entry(players_frame, textvariable=self.player_left, width=35)
         player_entry.bind('<Return>', lambda event: self.submit_query())
-        player_entry.pack(side=LEFT)
-        Button(players_frame, text="vs", command=self.swap_players, width=2).pack(side=LEFT, padx=6)
+        player_entry.pack(side=tk.LEFT)
+        Button(players_frame, text="vs", command=self.swap_players, width=2).pack(side=tk.LEFT, padx=6)
         player_entry = Entry(players_frame, textvariable=self.player_right, width=35)
         player_entry.bind('<Return>', lambda event: self.submit_query())
-        player_entry.pack(side=LEFT)
-        Label(players_frame, text="as", width=2).pack(side=LEFT)
-        (combo_role := Combobox(players_frame, values=[ROLE_EITHER, ROLE_SNIPER, ROLE_SPY], width=6)).pack(side=LEFT)
-        combo_role.set(ROLE_EITHER)
-        self.combo_role = combo_role
+        player_entry.pack(side=tk.LEFT)
+        Label(players_frame, text="as", width=2).pack(side=tk.LEFT)
+        self.combo_role = ttk.Combobox(players_frame, values=[ROLE_EITHER, ROLE_SNIPER, ROLE_SPY], width=6)
+        self.combo_role.pack(side=tk.LEFT)
+        self.combo_role.set(ROLE_EITHER)
 
-        (submission := Button(players_frame, text='Submit', command=self.submit_query)).pack(side=RIGHT)
-        self.submission = submission
+        self.submission = Button(players_frame, text='Submit', command=self.submit_query)
+        self.submission.pack(side=tk.RIGHT)
 
-        (tabs := Notebook(self)).pack()
-        self.tabs = tabs
+        self.tabs = ttk.Notebook(self)
+        self.tabs.pack()
 
         (venues_frame := Frame(self.tabs)).pack()
         self.tabs.add(venues_frame, text='  Venues  ')
@@ -88,9 +87,9 @@ class RePartyApplication(Tk):
             (v_butt := Button(
                 venues_frame,
                 command=lambda v=i: self.toggle_venue(v), width=160, height=90,
-                image=self.__loaded_images[venue][venue.selected], text=f"\n\n\n{venue.name}", compound=CENTER,
+                image=self.__loaded_images[venue][venue.selected], text=f"\n\n\n{venue.name}", compound=tk.CENTER,
                 background='#0a0' if venue.selected else '#a00', foreground='white', font=font_verdana(13)
-            )).grid(row=i // self.VENUE_DISPLAY_WIDTH, column=i % self.VENUE_DISPLAY_WIDTH)
+            )).grid(row=i // VENUE_DISPLAY_WIDTH, column=i % VENUE_DISPLAY_WIDTH)
             self.__venue_buttons[venue] = v_butt
 
         # todo this shall be replaced... v2: per venue A/B selection
@@ -113,39 +112,34 @@ class RePartyApplication(Tk):
         settings_frame.pack()
         self.tabs.add(settings_frame, text='  Settings  ')
 
-        def populate_listbox(box, options):
-            for option in options:
-                box.insert(END, option)
+        Label(settings_frame, text='Missions Completed').grid(row=1, column=1, sticky=tk.W, padx=6)
+        self.listbox_missions = Listbox(
+            settings_frame, selectmode="multiple", exportselection=False, width=25, height=8)
+        self.listbox_missions.grid(row=2, rowspan=8, column=1, sticky=tk.W + tk.N, padx=6)
+        self.populate_listbox(self.listbox_missions, mission_list)
 
-        Label(settings_frame, text='Missions Completed').grid(row=1, column=1, sticky=WEST, padx=6)
-        (lb := Listbox(settings_frame, selectmode="multiple", exportselection=False, width=25, height=8)
-         ).grid(row=2, rowspan=8, column=1, sticky=WEST + NORTH, padx=6)
-        populate_listbox(lb, mission_list)
-        self.listbox_missions = lb
+        Label(settings_frame, text='Game Results').grid(row=1, column=3, columnspan=2, sticky=tk.W, padx=6)
+        self.listbox_results = Listbox(
+            settings_frame, selectmode="multiple", exportselection=False, width=25, height=4)
+        self.listbox_results.grid(row=2, rowspan=4, column=3, columnspan=2, sticky=tk.W + tk.N, padx=6)
+        self.populate_listbox(self.listbox_results, game_result_list)
 
-        Label(settings_frame, text='Game Results').grid(row=1, column=3, columnspan=2, sticky=WEST, padx=6)
-        (lb := Listbox(settings_frame, selectmode="multiple", exportselection=False, width=25, height=4)
-         ).grid(row=2, rowspan=4, column=3, columnspan=2, sticky=WEST + NORTH, padx=6)
-        populate_listbox(lb, game_result_list)
-        self.listbox_results = lb
+        Label(settings_frame, text='Reaches MWC?').grid(row=6, column=3, sticky=tk.W, padx=6)
+        self.combo_mwc = ttk.Combobox(settings_frame, values=[MWC_EITHER, MWC_YES, MWC_NO], width=6)
+        self.combo_mwc.grid(row=6, column=4, sticky=tk.W, padx=6)
+        self.combo_mwc.set(MWC_EITHER)
 
-        Label(settings_frame, text='Reaches MWC?').grid(row=6, column=3, sticky=WEST, padx=6)
-        (combo_mwc := Combobox(settings_frame, values=[MWC_EITHER, MWC_YES, MWC_NO], width=6)
-         ).grid(row=6, column=4, sticky=WEST, padx=6)
-        combo_mwc.set(MWC_EITHER)
-        self.combo_mwc = combo_mwc
-
+        Label(settings_frame, text='Replay Directories').grid(row=1, column=5, sticky=tk.W, padx=6)
+        self.listbox_directories = Listbox(
+            settings_frame, selectmode=tk.MULTIPLE, exportselection=False, width=25, height=8)
+        self.listbox_directories.grid(row=2, rowspan=8, column=5, columnspan=2, sticky=tk.W + tk.N, padx=6)
         subdirectories = listdir(REPLAYS_DIRECTORY())
         # todo if len(subdirs) > 8, add scrollbar
-        Label(settings_frame, text='Replay Directories').grid(row=1, column=5, sticky=WEST, padx=6)
-        (lb := Listbox(settings_frame, selectmode=MULTIPLE, exportselection=False, width=25, height=8)
-         ).grid(row=2, rowspan=8, column=5, columnspan=2, sticky=WEST + NORTH, padx=6)
-        populate_listbox(lb, subdirectories)
+        self.populate_listbox(self.listbox_directories, subdirectories)
         for default_dir in ('Matches', 'Spectations'):
-            lb.selection_set(subdirectories.index(default_dir))  # luckily, this cooperates with multi-select
-        self.listbox_directories = lb
+            self.listbox_directories.selection_set(subdirectories.index(default_dir))
 
-        self.progress_bar_style = Style(self)
+        self.progress_bar_style = ttk.Style(self)
         self.progress_bar_style.layout(
             "LabeledProgressbar", [
                 ('LabeledProgressbar.trough', {'children': [
@@ -154,9 +148,13 @@ class RePartyApplication(Tk):
                 ], 'sticky': 'nswe'})]
         )
         # self.progress_bar_style.configure('LabeledProgressbar', bg='green')  # todo figure out bar color
-        (loading_bar := Progressbar(self, variable=self.progress, maximum=1, style='LabeledProgressbar')).pack(
-            side=BOTTOM, fill=FILLX)
-        self.loading_bar = loading_bar
+        self.loading_bar = ttk.Progressbar(self, variable=self.progress, maximum=1, style='LabeledProgressbar')
+        self.loading_bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+    @staticmethod
+    def populate_listbox(box, options):
+        for option in options:
+            box.insert(tk.END, option)
 
     def set_status(self, text):
         self.progress_bar_style.configure("LabeledProgressbar", text=text)
@@ -263,7 +261,7 @@ class RePartyApplication(Tk):
         if self.query_in_progress:
             return
         self.query_in_progress = True
-        self.submission['state'] = DISABLED  # prevent another load until the previous one has finished
+        self.submission['state'] = tk.DISABLED  # prevent another load until the previous one has finished
 
         replays = []
         hummus = ReplayParser()
@@ -273,7 +271,7 @@ class RePartyApplication(Tk):
             replays.extend(hummus.find_replays(replay_dir / subdir))
         if not (count := len(replays)):
             dialog_modal("Alert!", f"No replays were found in your {lister(directories)} folder(s).")
-            self.submission['state'] = NORMAL
+            self.submission['state'] = tk.NORMAL
             return
 
         using_progress_bar = REPARTY_CONFIG[KEYWORD_PROGRESS_BAR]
@@ -292,10 +290,10 @@ class RePartyApplication(Tk):
                     while i < count and time() - start < t:  # 1 second intervals
                         try:
                             parsed = hummus.parse(replays[i])
-                            if all(crit(parsed) for crit in criteria):
+                            if all(criterion(parsed) for criterion in criteria):
                                 results.append(parsed)
                         except ReplayParser.ReplayParseException as e:
-                            pass
+                            print(e)
                         i += 1
                     # Remnant of v0, I don't remember what it does so hopefully it's not important... (lmao)
                     # self.update_idletasks()
@@ -323,7 +321,7 @@ class RePartyApplication(Tk):
         def __thread_finished_check():
             try:
                 results = q.get_nowait()
-                self.submission['state'] = NORMAL
+                self.submission['state'] = tk.NORMAL
                 self.query_in_progress = False
                 if results:
                     self.set_status(f'{len(results)} Replays Found')
@@ -336,10 +334,17 @@ class RePartyApplication(Tk):
         self.after(1500, __thread_finished_check)
 
 
-if __name__ == '__main__':
-    # pyinstaller --add-data './assets;assets' -n 'ReParty v1.1' -w -F RePartyApplication.py
+def main():
     try:
-        RePartyApplication().mainloop()
+        ReParty().mainloop()
     except Exception as e:
         REPARTY_CONFIG['CRASH REPORT'] = str(e)
         REPARTY_CONFIG.save()
+        dialog_modal(
+            'ReParty Crashed!',
+            'Please open your ReParty_config.json file and forward the "CRASH REPORT" to Legorve Genine#3815')
+
+
+if __name__ == '__main__':
+    # pyinstaller --add-data './assets;assets' -n 'ReParty v1.1' -w -F RePartyApplication.py
+    main()
