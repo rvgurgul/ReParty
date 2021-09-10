@@ -337,8 +337,7 @@ class RePartyApplication(Tk):
 
 
 if __name__ == '__main__':
-    # pyinstaller command:
-    # pyinstaller --add-data './assets;assets' -w -F RePartyApplication.py
+    # pyinstaller --add-data './assets;assets' -n 'ReParty v1.1' -w -F RePartyApplication.py
     try:
         RePartyApplication().mainloop()
     except Exception as e:
