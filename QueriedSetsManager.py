@@ -8,6 +8,7 @@ class QueriedSetModal(Tk):
     def __init__(self, replays):
         Tk.__init__(self)
 
+        self.title('ReParty: Queried Set Generator')
         self.replays = replays
         self.memory_saver = IntVar()
 

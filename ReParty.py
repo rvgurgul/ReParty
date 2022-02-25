@@ -26,7 +26,9 @@ MWC_NO = 'No'
 
 
 class ReParty(Tk):
-    def __init__(self, VENUE_DISPLAY_WIDTH=6):
+    def __init__(self, VENUE_DISPLAY_WIDTH: int = 6):
+        """Initialize User Interface"""
+
         Tk.__init__(self)
         self.title('ReParty')
         self.minsize(width=640, height=480)
@@ -152,32 +154,42 @@ class ReParty(Tk):
         self.loading_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
     @staticmethod
-    def populate_listbox(box, options):
+    def populate_listbox(box: tk.Listbox, options: list):
+        """
+        :parameter
+            options (list): elements to be added to a tk.Listbox
+        :parameter
+            box (tk.Listbox): Listbox which elements should be added to
+        """
         for option in options:
             box.insert(tk.END, option)
 
     def set_status(self, text):
+        """Update the Label embedded into the Progress Bar"""
         self.progress_bar_style.configure("LabeledProgressbar", text=text)
 
     def on_window_close(self):
+        """Save the user's config when when the window exits."""
         REPARTY_CONFIG.save()
         self.destroy()
 
     def toggle_venue(self, venue_index):
+        """Toggle the selected state of a venue and its button"""
         venue = self.displayed_venues[venue_index]
-        val = not venue.selected
+        val = venue.toggle()
         self.__venue_buttons[venue].configure(
             image=self.__loaded_images[venue][val],
             background='#0a0' if val else '#a00'
         )
-        venue.selected = val
 
     def swap_players(self):
+        """Swap the text entered into the two text fields"""
         temp = self.player_left.get()
         self.player_left.set(self.player_right.get())
         self.player_right.set(temp)
 
     def validate_setup(self):  # todo finish behavior, may require persistent variables to determine the change
+        """Validate a combination of A/B is valid (A<=B)"""
         setup_any = self.scroll_setup_any.get()
         setup_of = self.scroll_setup_of.get()
         if "X" in {setup_any, setup_of}:
@@ -186,6 +198,7 @@ class ReParty(Tk):
             self.scroll_setup_of.set(setup_any)
 
     def submit_query(self):
+        """Assemble a list of user-specified criteria to apply as a query"""
         left_player = self.cleaner.clean(self.player_left.get())
         right_player = self.cleaner.clean(self.player_right.get())
         role_match = self.combo_role.get()
@@ -257,6 +270,12 @@ class ReParty(Tk):
         self.begin_query(criteria, directories_wanted)
 
     def begin_query(self, criteria, directories):
+        """Apply criteria to .replay files found in directories.
+        :param
+            criteria (list): list of lambda functions which, when passed a .replay file, returns a boolean
+        :param:
+            directories (list): list of paths containing .replay files
+        """
         # todo with my improved threading knowledge, turn the disabled submit button into a cancel button!
         if self.query_in_progress:
             return

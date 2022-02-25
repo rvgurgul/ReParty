@@ -12,6 +12,10 @@ class Venue:
     def get_image_path(self):
         return VENUE_IMAGES / f"{self.name.lower().replace(' ', '_')}.png"
 
+    def toggle(self):
+        self.selected = not self.selected
+        return self.selected
+
 
 class LegacyVenue(Venue):
     def __init__(self, name, prop_allowed=True):
