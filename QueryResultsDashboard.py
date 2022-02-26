@@ -35,7 +35,7 @@ class QueryResultsDashboard(Tk):
         self.title('ReParty: Analysis Dashboard')
         self.replays = replays
         # could TECHNICALLY filter these replays further and open another AnalysisDashboard!
-        # todo for david (big fan): create window in more friendly positions
+        self.geometry("+0+0")
 
         toolbar = Menu(self)
         self.config(menu=toolbar)

@@ -32,6 +32,7 @@ class ReParty(Tk):
         Tk.__init__(self)
         self.title('ReParty')
         self.minsize(width=640, height=480)
+        self.geometry("+0+0")
         self.iconbitmap(default=ASSETS / 'diamond.ico')
         self.protocol('WM_DELETE_WINDOW', self.on_window_close)
         self._loaded_images = {}  # holds images in memory so they aren't garbage collected
